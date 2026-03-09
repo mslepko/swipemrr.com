@@ -63,6 +63,7 @@ export function setCachedData(data: CachedData): void {
 export function clearCache(): void {
   localStorage.removeItem(CACHE_KEY);
   localStorage.removeItem(SEEN_KEY);
+  localStorage.removeItem(POSITION_KEY);
 }
 
 export function getSeenSlugs(): Set<string> {
@@ -85,6 +86,26 @@ export function removeSeenSlug(slug: string): void {
   const seen = getSeenSlugs();
   seen.delete(slug);
   localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
+}
+
+const POSITION_KEY = "swipemrr_position";
+
+export function getPosition(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = localStorage.getItem(POSITION_KEY);
+    return raw ? parseInt(raw, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function setPosition(index: number): void {
+  localStorage.setItem(POSITION_KEY, String(index));
+}
+
+export function clearPosition(): void {
+  localStorage.removeItem(POSITION_KEY);
 }
 
 export function formatCurrency(dollars: number | undefined | null): string {

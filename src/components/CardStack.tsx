@@ -24,6 +24,9 @@ import {
   clearCache,
   getSeenSlugs,
   getSavedStartups,
+  getPosition,
+  setPosition,
+  clearPosition,
 } from "@/lib/storage";
 import StartupCard from "./StartupCard";
 import EmptyState from "./EmptyState";
@@ -31,6 +34,24 @@ import EmptyState from "./EmptyState";
 const SWIPE_THRESHOLD = 120;
 const FLY_DISTANCE = 600;
 const MAX_UNDO_HISTORY = 10;
+const REFRESH_INTERVAL = 30 * 60 * 1000; // 30 min background refresh
+
+// Deterministic daily shuffle using a seeded PRNG
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const result = [...arr];
+  let s = seed;
+  for (let i = result.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0x7fffffff;
+    const j = s % (i + 1);
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+function getDailySeed(): number {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
 
 interface CardStackProps {
   filters?: Filters;
@@ -41,11 +62,10 @@ export default function CardStack({ filters }: CardStackProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const [savedCount, setSavedCount] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [swipeHistory, setSwipeHistory] = useState<SwipeHistoryEntry[]>([]);
+  const initialLoadDone = useRef(false);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-12, 0, 12]);
@@ -54,6 +74,9 @@ export default function CardStack({ filters }: CardStackProps) {
 
   const startupsRef = useRef(startups);
   startupsRef.current = startups;
+
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
 
   const buildUrl = useCallback(
     (pageNum: number) => {
@@ -79,68 +102,128 @@ export default function CardStack({ filters }: CardStackProps) {
     [filters]
   );
 
-  const fetchData = useCallback(
-    async (pageNum: number, append = false) => {
-      setLoading(true);
-      setError(null);
+  // Fetch ALL pages, then shuffle and filter seen
+  const fetchAllStartups = useCallback(
+    async (isRefresh = false) => {
+      if (!isRefresh) {
+        setLoading(true);
+        setError(null);
+      }
+
       try {
-        const res = await fetch(buildUrl(pageNum));
-        if (res.status === 429) {
-          setError("Too many requests, please wait a moment");
-          return;
+        const allStartups: TrustMRRStartup[] = [];
+        let pageNum = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+          const res = await fetch(buildUrl(pageNum));
+          if (res.status === 429) {
+            if (!isRefresh) setError("Too many requests, please wait a moment");
+            return;
+          }
+          if (!res.ok) throw new Error("Failed to fetch");
+          const data: ApiResponse = await res.json();
+          allStartups.push(...data.data);
+          hasMore = data.meta.hasMore;
+          pageNum++;
         }
-        if (!res.ok) throw new Error("Failed to fetch");
-        const data: ApiResponse = await res.json();
 
-        const seen = getSeenSlugs();
-        let newStartups = data.data.filter((s) => !seen.has(s.slug));
-
-        // Filter out startups with no MRR or no multiple in Hot Deals mode
-        if (filters?.sort === "multiple-asc") {
-          newStartups = newStartups.filter(
+        // Filter out Hot Deals junk
+        let filtered = allStartups;
+        if (filtersRef.current?.sort === "multiple-asc") {
+          filtered = filtered.filter(
             (s) => s.mrr != null && s.mrr > 0 && s.multiple != null
           );
         }
 
-        if (append) {
+        // Shuffle with daily seed for random order
+        const shuffled = seededShuffle(filtered, getDailySeed());
+
+        // Remove already-seen startups
+        const seen = getSeenSlugs();
+        const unseen = shuffled.filter((s) => !seen.has(s.slug));
+
+        // Cache everything
+        setCachedData({
+          startups: shuffled,
+          cachedAt: Date.now(),
+          page: 1,
+          hasMore: false,
+        });
+
+        if (isRefresh) {
+          // Background refresh: add any brand new startups at end
           setStartups((prev) => {
-            const combined = [...prev, ...newStartups];
-            setCachedData({
-              startups: combined,
-              cachedAt: Date.now(),
-              page: data.meta.page,
-              hasMore: data.meta.hasMore,
-            });
-            return combined;
+            const existingSlugs = new Set(prev.map((s) => s.slug));
+            const brandNew = unseen.filter((s) => !existingSlugs.has(s.slug));
+            if (brandNew.length > 0) {
+              return [...prev, ...brandNew];
+            }
+            return prev;
           });
         } else {
-          setStartups(newStartups);
-          setCurrentIndex(0);
-          setCachedData({
-            startups: newStartups,
-            cachedAt: Date.now(),
-            page: data.meta.page,
-            hasMore: data.meta.hasMore,
-          });
+          setStartups(unseen);
+          // Restore persisted position, clamped to valid range
+          const savedPos = getPosition();
+          const validPos = Math.min(savedPos, Math.max(unseen.length - 1, 0));
+          setCurrentIndex(validPos);
         }
-        setHasMore(data.meta.hasMore);
-        setPage(data.meta.page);
       } catch {
-        setError("Something went wrong. Please try again.");
+        if (!isRefresh) setError("Something went wrong. Please try again.");
       } finally {
-        setLoading(false);
+        if (!isRefresh) setLoading(false);
       }
     },
     [buildUrl]
   );
 
-  // Refetch when filters change
+  // Initial load: try cache first, then fetch
   useEffect(() => {
-    clearCache();
-    setSwipeHistory([]);
-    fetchData(1);
+    if (initialLoadDone.current) {
+      // Filters changed — reset everything
+      clearCache();
+      clearPosition();
+      setSwipeHistory([]);
+      fetchAllStartups();
+    } else {
+      initialLoadDone.current = true;
+      const cached = getCachedData();
+      if (cached && cached.startups.length > 0) {
+        const seen = getSeenSlugs();
+        let unseen = cached.startups.filter((s) => !seen.has(s.slug));
+
+        if (filters?.sort === "multiple-asc") {
+          unseen = unseen.filter(
+            (s) => s.mrr != null && s.mrr > 0 && s.multiple != null
+          );
+        }
+
+        if (unseen.length > 0) {
+          setStartups(unseen);
+          const savedPos = getPosition();
+          setCurrentIndex(Math.min(savedPos, unseen.length - 1));
+          setLoading(false);
+          return;
+        }
+      }
+      fetchAllStartups();
+    }
     setSavedCount(getSavedStartups().length);
-  }, [fetchData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchAllStartups]);
+
+  // Background refresh every 30 min
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchAllStartups(true);
+    }, REFRESH_INTERVAL);
+    return () => clearInterval(interval);
+  }, [fetchAllStartups]);
+
+  // Persist position whenever it changes
+  useEffect(() => {
+    setPosition(currentIndex);
+  }, [currentIndex]);
 
   const advanceCard = useCallback(
     (direction: "left" | "right") => {
@@ -159,14 +242,9 @@ export default function CardStack({ filters }: CardStackProps) {
         setSavedCount(getSavedStartups().length);
       }
 
-      const nextIndex = currentIndex + 1;
-      setCurrentIndex(nextIndex);
-
-      if (nextIndex >= startupsRef.current.length - 5 && hasMore) {
-        fetchData(page + 1, true);
-      }
+      setCurrentIndex(currentIndex + 1);
     },
-    [currentIndex, hasMore, page, fetchData]
+    [currentIndex]
   );
 
   const handleSwipe = useCallback(
@@ -262,11 +340,12 @@ export default function CardStack({ filters }: CardStackProps) {
 
   const handleRefresh = useCallback(() => {
     clearCache();
+    clearPosition();
     setStartups([]);
     setCurrentIndex(0);
     setSwipeHistory([]);
-    fetchData(1);
-  }, [fetchData]);
+    fetchAllStartups();
+  }, [fetchAllStartups]);
 
   if (loading && startups.length === 0) {
     return <SkeletonCard />;
