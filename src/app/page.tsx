@@ -42,7 +42,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-[420px] flex-col px-4 py-6">
+    <div className="mx-auto flex min-h-screen max-w-[420px] flex-col overflow-x-hidden px-4 py-6">
       <header className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900">
           Swipe<span className="text-green-600">MRR</span>

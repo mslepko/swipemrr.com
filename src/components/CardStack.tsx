@@ -30,7 +30,7 @@ import {
 import StartupCard from "./StartupCard";
 import EmptyState from "./EmptyState";
 
-const SWIPE_THRESHOLD = 120;
+const SWIPE_THRESHOLD = 80;
 const FLY_DISTANCE = 600;
 const MAX_UNDO_HISTORY = 10;
 const REFRESH_INTERVAL = 30 * 60 * 1000; // 30 min background refresh
@@ -402,7 +402,9 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
                 className="absolute inset-0"
                 style={{
                   zIndex: 3 - i,
-                  ...(isTop ? { x, rotate } : {}),
+                  ...(isTop
+                    ? { x, rotate, touchAction: "pan-y" }
+                    : {}),
                 }}
                 animate={{
                   scale: 1 - i * 0.05,

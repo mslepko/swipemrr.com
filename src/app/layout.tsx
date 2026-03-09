@@ -6,6 +6,23 @@ export const metadata: Metadata = {
   title: "SwipeMRR — Swipe through startups for sale",
   description:
     "Discover startups for sale with a Tinder-style swipe interface. Browse MRR, pricing, and growth metrics at a glance.",
+  metadataBase: new URL("https://swipemrr.com"),
+  openGraph: {
+    title: "SwipeMRR — Swipe through startups for sale",
+    description:
+      "Discover startups for sale with a Tinder-style swipe interface. Browse MRR, pricing, and growth metrics at a glance.",
+    url: "https://swipemrr.com",
+    siteName: "SwipeMRR",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SwipeMRR — Swipe through startups for sale",
+    description:
+      "Discover startups for sale with a Tinder-style swipe interface. Browse MRR, pricing, and growth metrics at a glance.",
+    creator: "@michal_codes",
+  },
 };
 
 export const viewport: Viewport = {
