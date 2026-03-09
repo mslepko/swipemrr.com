@@ -1,9 +1,14 @@
 import { SavedStartup, TrustMRRStartup, CachedData } from "./types";
 
 const SAVED_KEY = "swipemrr_saved";
-const CACHE_KEY = "swipemrr_cache";
+const CACHE_KEY = "swipemrr_cache_v2";
 const SEEN_KEY = "swipemrr_seen";
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
+
+// Clean up old cache keys from previous versions
+if (typeof window !== "undefined") {
+  localStorage.removeItem("swipemrr_cache");
+}
 
 export function getSavedStartups(): SavedStartup[] {
   if (typeof window === "undefined") return [];
@@ -22,9 +27,9 @@ export function saveStartup(startup: TrustMRRStartup): void {
     slug: startup.slug,
     name: startup.name,
     category: startup.category,
-    currentMrr: startup.currentMrr,
+    mrr: startup.mrr,
     askingPrice: startup.askingPrice,
-    revenueMultiple: startup.revenueMultiple,
+    multiple: startup.multiple,
     savedAt: new Date().toISOString(),
   });
   localStorage.setItem(SAVED_KEY, JSON.stringify(saved));
@@ -58,6 +63,7 @@ export function setCachedData(data: CachedData): void {
 export function clearCache(): void {
   localStorage.removeItem(CACHE_KEY);
   localStorage.removeItem(SEEN_KEY);
+  localStorage.removeItem(POSITION_KEY);
 }
 
 export function getSeenSlugs(): Set<string> {
@@ -76,14 +82,39 @@ export function addSeenSlug(slug: string): void {
   localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
 }
 
-export function formatCurrency(cents: number | undefined | null): string {
-  if (cents == null) return "N/A";
-  const dollars = cents / 100;
+export function removeSeenSlug(slug: string): void {
+  const seen = getSeenSlugs();
+  seen.delete(slug);
+  localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
+}
+
+const POSITION_KEY = "swipemrr_position";
+
+export function getPosition(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = localStorage.getItem(POSITION_KEY);
+    return raw ? parseInt(raw, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function setPosition(index: number): void {
+  localStorage.setItem(POSITION_KEY, String(index));
+}
+
+export function clearPosition(): void {
+  localStorage.removeItem(POSITION_KEY);
+}
+
+export function formatCurrency(dollars: number | undefined | null): string {
+  if (dollars == null) return "N/A";
   if (dollars >= 1_000_000) {
     return `$${(dollars / 1_000_000).toFixed(1)}M`;
   }
   if (dollars >= 1_000) {
     return `$${(dollars / 1_000).toFixed(1)}K`;
   }
-  return `$${dollars.toFixed(0)}`;
+  return `$${dollars.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 }

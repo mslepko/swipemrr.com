@@ -40,12 +40,7 @@ export default function SavedList() {
           <div className="mb-2 flex items-start justify-between">
             <div>
               <h3 className="font-bold text-gray-900">{s.name}</h3>
-              <span className="text-xs text-gray-500">
-                {s.category
-                  .split("-")
-                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                  .join(" ")}
-              </span>
+              <span className="text-xs text-gray-500">{s.category}</span>
             </div>
             <button
               onClick={() => handleRemove(s.slug)}
@@ -70,7 +65,7 @@ export default function SavedList() {
             <div>
               <span className="text-gray-400">MRR </span>
               <span className="font-semibold text-gray-900">
-                {formatCurrency(s.currentMrr)}
+                {formatCurrency(s.mrr)}
               </span>
             </div>
             <div>
@@ -82,9 +77,9 @@ export default function SavedList() {
             <div>
               <span className="text-gray-400">Multiple </span>
               <span
-                className={`font-semibold ${s.revenueMultiple != null && s.revenueMultiple < 1 ? "text-green-600" : s.revenueMultiple != null && s.revenueMultiple > 4 ? "text-red-600" : "text-gray-900"}`}
+                className={`font-semibold ${s.multiple != null && s.multiple < 1 ? "text-green-600" : s.multiple != null && s.multiple > 4 ? "text-red-600" : "text-gray-900"}`}
               >
-                {s.revenueMultiple != null ? `${s.revenueMultiple.toFixed(1)}x` : "N/A"}
+                {s.multiple != null ? `${s.multiple.toFixed(1)}x` : "N/A"}
               </span>
             </div>
           </div>
