@@ -123,8 +123,15 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
       }
 
       try {
-        const res = await fetch("/api/startups/all");
-        if (res.status === 429) {
+        let res: Response | null = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          res = await fetch("/api/startups/all");
+          if (res.status !== 429) break;
+          if (attempt < 2) {
+            await new Promise((r) => setTimeout(r, 2000 * Math.pow(2, attempt)));
+          }
+        }
+        if (!res || res.status === 429) {
           if (!isRefresh) setError("Too many requests, please wait a moment");
           return;
         }

@@ -31,6 +31,12 @@ interface RawApiResponse {
   };
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+const MAX_RETRIES = 3;
+
 export async function fetchStartups(
   params: Record<string, string>
 ): Promise<ApiResponse> {
@@ -44,31 +50,41 @@ export async function fetchStartups(
     url.searchParams.set(key, value);
   });
 
-  const res = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-  });
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const res = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-  if (res.status === 429) {
-    const resetHeader = res.headers.get("X-RateLimit-Reset");
-    const retryAfter = resetHeader
-      ? Math.max(0, Number(resetHeader) * 1000 - Date.now())
-      : 60000;
-    throw new RateLimitError(retryAfter);
+    if (res.status === 429) {
+      const resetHeader = res.headers.get("X-RateLimit-Reset");
+      const retryAfter = resetHeader
+        ? Math.max(0, Number(resetHeader) * 1000 - Date.now())
+        : 2000 * Math.pow(2, attempt);
+
+      if (attempt < MAX_RETRIES) {
+        const delay = Math.min(retryAfter, 30000);
+        await sleep(delay);
+        continue;
+      }
+      throw new RateLimitError(retryAfter);
+    }
+
+    if (!res.ok) {
+      throw new Error(`API error: ${res.status}`);
+    }
+
+    const raw: RawApiResponse = await res.json();
+
+    return {
+      data: raw.data.map(normalizeStartup),
+      meta: raw.meta,
+    };
   }
 
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
-  }
-
-  const raw: RawApiResponse = await res.json();
-
-  return {
-    data: raw.data.map(normalizeStartup),
-    meta: raw.meta,
-  };
+  throw new Error("Unexpected: exhausted retries");
 }
 
 export async function fetchAllStartups(): Promise<TrustMRRStartup[]> {
@@ -77,6 +93,7 @@ export async function fetchAllStartups(): Promise<TrustMRRStartup[]> {
   let hasMore = true;
 
   while (hasMore) {
+    if (page > 1) await sleep(500);
     const data = await fetchStartups({
       onSale: "true",
       limit: "50",
