@@ -8,7 +8,7 @@ const getCachedStartups = unstable_cache(
     return { startups, fetchedAt: Date.now() };
   },
   ["all-startups"],
-  { revalidate: 3600, tags: ["all-startups"] }
+  { revalidate: 86400, tags: ["all-startups"] }
 );
 
 export async function GET() {
