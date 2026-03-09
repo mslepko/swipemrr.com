@@ -62,9 +62,9 @@ export default function StartupCard({ startup }: StartupCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div ref={cardRef} className="relative flex h-full w-full flex-col justify-between rounded-2xl bg-white p-6 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
+    <div ref={cardRef} className="relative flex h-full w-full flex-col justify-between overflow-hidden rounded-2xl bg-white p-6 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
       <ShareButton cardRef={cardRef} startup={startup} />
-      <div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mb-1 flex items-center gap-3 pr-10">
           {startup.logo ? (
             <img
@@ -100,7 +100,7 @@ export default function StartupCard({ startup }: StartupCardProps) {
           </span>
         </div>
 
-        <p className="mb-5 text-sm leading-relaxed text-gray-600">
+        <p className="mb-5 line-clamp-3 text-sm leading-relaxed text-gray-600">
           {startup.description}
         </p>
 
@@ -156,7 +156,7 @@ export default function StartupCard({ startup }: StartupCardProps) {
         href={`https://trustmrr.com/startup/${startup.slug}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-5 block w-full rounded-xl bg-gray-900 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-gray-800"
+        className="mt-5 block w-full shrink-0 rounded-xl bg-gray-900 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-gray-800"
       >
         View on TrustMRR
       </a>
