@@ -38,7 +38,8 @@ const MRR_PRESETS = [
 
 const PRICE_PRESETS = [
   { label: "Any", min: undefined, max: undefined },
-  { label: "$0–$50K", min: 0, max: 50000 },
+  { label: "Under $10K", min: 0, max: 10000 },
+  { label: "$10K–$50K", min: 10000, max: 50000 },
   { label: "$50K–$500K", min: 50000, max: 500000 },
   { label: "$500K+", min: 500000, max: undefined },
 ];
@@ -169,12 +170,12 @@ export default function FilterDrawer({
               </div>
             </div>
 
-            {/* Price Range */}
+            {/* Asking Price */}
             <div className="mb-5">
               <p className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400">
-                Price Range
+                Asking Price
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {PRICE_PRESETS.map((preset, i) => (
                   <button
                     key={preset.label}

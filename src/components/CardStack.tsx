@@ -93,7 +93,14 @@ export default function CardStack({ filters }: CardStackProps) {
         const data: ApiResponse = await res.json();
 
         const seen = getSeenSlugs();
-        const newStartups = data.data.filter((s) => !seen.has(s.slug));
+        let newStartups = data.data.filter((s) => !seen.has(s.slug));
+
+        // Filter out startups with no MRR or no multiple in Hot Deals mode
+        if (filters?.sort === "multiple-asc") {
+          newStartups = newStartups.filter(
+            (s) => s.mrr != null && s.mrr > 0 && s.multiple != null
+          );
+        }
 
         if (append) {
           setStartups((prev) => {

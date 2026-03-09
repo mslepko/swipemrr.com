@@ -104,7 +104,7 @@ export default function StartupCard({ startup }: StartupCardProps) {
           {startup.description}
         </p>
 
-        {startup.mrr != null && startup.growth30d != null && (
+        {startup.mrr != null && startup.mrr > 0 && startup.growth30d != null && (
           <MrrSparkline mrr={startup.mrr} growth30d={startup.growth30d} />
         )}
 
