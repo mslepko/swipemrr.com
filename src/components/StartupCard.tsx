@@ -100,7 +100,7 @@ export default function StartupCard({ startup }: StartupCardProps) {
           </span>
         </div>
 
-        <p className="mb-5 line-clamp-3 text-sm leading-relaxed text-gray-600">
+        <p className="mb-5 text-sm leading-relaxed text-gray-600">
           {startup.description}
         </p>
 
