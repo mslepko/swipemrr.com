@@ -82,9 +82,9 @@ export default function SavedList() {
             <div>
               <span className="text-gray-400">Multiple </span>
               <span
-                className={`font-semibold ${s.revenueMultiple < 1 ? "text-green-600" : s.revenueMultiple > 4 ? "text-red-600" : "text-gray-900"}`}
+                className={`font-semibold ${s.revenueMultiple != null && s.revenueMultiple < 1 ? "text-green-600" : s.revenueMultiple != null && s.revenueMultiple > 4 ? "text-red-600" : "text-gray-900"}`}
               >
-                {s.revenueMultiple.toFixed(1)}x
+                {s.revenueMultiple != null ? `${s.revenueMultiple.toFixed(1)}x` : "N/A"}
               </span>
             </div>
           </div>

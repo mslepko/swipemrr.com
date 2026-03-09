@@ -37,7 +37,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   "mobile-apps": "bg-cyan-100 text-cyan-800",
 };
 
-function getMultipleColor(multiple: number): string {
+function getMultipleColor(multiple: number | undefined): string {
+  if (multiple == null) return "text-gray-900";
   if (multiple < 1) return "text-green-600";
   if (multiple > 4) return "text-red-600";
   return "text-gray-900";
@@ -98,7 +99,7 @@ export default function StartupCard({ startup }: StartupCardProps) {
             <p
               className={`text-2xl font-bold ${getMultipleColor(startup.revenueMultiple)}`}
             >
-              {startup.revenueMultiple.toFixed(1)}x
+              {startup.revenueMultiple != null ? `${startup.revenueMultiple.toFixed(1)}x` : "N/A"}
             </p>
           </div>
           <div>
@@ -106,10 +107,9 @@ export default function StartupCard({ startup }: StartupCardProps) {
               MoM Growth
             </p>
             <p
-              className={`text-2xl font-bold ${startup.momGrowth >= 0 ? "text-green-600" : "text-red-600"}`}
+              className={`text-2xl font-bold ${startup.momGrowth != null && startup.momGrowth >= 0 ? "text-green-600" : startup.momGrowth != null ? "text-red-600" : "text-gray-900"}`}
             >
-              {startup.momGrowth >= 0 ? "+" : ""}
-              {startup.momGrowth.toFixed(1)}%
+              {startup.momGrowth != null ? `${startup.momGrowth >= 0 ? "+" : ""}${startup.momGrowth.toFixed(1)}%` : "N/A"}
             </p>
           </div>
         </div>

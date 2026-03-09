@@ -3,13 +3,13 @@ export interface TrustMRRStartup {
   slug: string;
   category: string;
   description: string;
-  currentMrr: number;
-  currentTotalRevenue: number;
-  currentLast30DaysRevenue: number;
-  momGrowth: number;
+  currentMrr?: number;
+  currentTotalRevenue?: number;
+  currentLast30DaysRevenue?: number;
+  momGrowth?: number;
   onSale: boolean;
-  askingPrice: number;
-  revenueMultiple: number;
+  askingPrice?: number;
+  revenueMultiple?: number;
   logo?: string;
   foundedYear?: number;
   techStack?: string[];
@@ -21,9 +21,9 @@ export interface SavedStartup {
   slug: string;
   name: string;
   category: string;
-  currentMrr: number;
-  askingPrice: number;
-  revenueMultiple: number;
+  currentMrr?: number;
+  askingPrice?: number;
+  revenueMultiple?: number;
   savedAt: string;
 }
 

@@ -76,7 +76,8 @@ export function addSeenSlug(slug: string): void {
   localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
 }
 
-export function formatCurrency(cents: number): string {
+export function formatCurrency(cents: number | undefined | null): string {
+  if (cents == null) return "N/A";
   const dollars = cents / 100;
   if (dollars >= 1_000_000) {
     return `$${(dollars / 1_000_000).toFixed(1)}M`;
