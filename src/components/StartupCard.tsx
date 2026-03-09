@@ -65,36 +65,36 @@ export default function StartupCard({ startup }: StartupCardProps) {
     <div ref={cardRef} className="relative flex h-full w-full flex-col justify-between rounded-2xl bg-white p-6 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
       <ShareButton cardRef={cardRef} startup={startup} />
       <div>
-        <div className="mb-3 flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            {startup.logo ? (
-              <img
-                src={startup.logo}
-                alt=""
-                className="h-10 w-10 shrink-0 rounded-lg bg-gray-100 object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
-              />
-            ) : (
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-lg font-bold text-gray-400">
-                {startup.name.charAt(0)}
-              </div>
-            )}
-            <div>
-              <h2 className="text-xl font-bold leading-tight text-gray-900">
-                {startup.name}
-              </h2>
-              {startup.foundedDate && (
-                <p className="text-xs text-gray-400">
-                  Founded{" "}
-                  {new Date(startup.foundedDate).getFullYear()}
-                </p>
-              )}
+        <div className="mb-1 flex items-center gap-3 pr-10">
+          {startup.logo ? (
+            <img
+              src={startup.logo}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-lg bg-gray-100 object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          ) : (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-lg font-bold text-gray-400">
+              {startup.name.charAt(0)}
             </div>
+          )}
+          <div>
+            <h2 className="text-xl font-bold leading-tight text-gray-900">
+              {startup.name}
+            </h2>
+            {startup.foundedDate && (
+              <p className="text-xs text-gray-400">
+                Founded{" "}
+                {new Date(startup.foundedDate).getFullYear()}
+              </p>
+            )}
           </div>
+        </div>
+        <div className="mb-3">
           <span
-            className={`ml-2 shrink-0 rounded-full px-3 py-1 text-xs font-medium ${categoryColor}`}
+            className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${categoryColor}`}
           >
             {startup.category}
           </span>

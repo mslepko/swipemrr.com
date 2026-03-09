@@ -4,12 +4,14 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import CardStack from "@/components/CardStack";
 import FilterDrawer from "@/components/FilterDrawer";
+import Footer from "@/components/Footer";
 import { getSavedStartups } from "@/lib/storage";
 import { Filters } from "@/lib/types";
 
 export default function Home() {
   const [savedCount, setSavedCount] = useState(0);
   const [filters, setFilters] = useState<Filters>({ sort: "best-deal" });
+  const [fetchedAt, setFetchedAt] = useState<number>();
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
@@ -111,8 +113,10 @@ export default function Home() {
       </div>
 
       <main className="flex-1">
-        <CardStack filters={filters} />
+        <CardStack filters={filters} onFetchedAt={setFetchedAt} />
       </main>
+
+      <Footer fetchedAt={fetchedAt} />
 
       <FilterDrawer
         open={showFilters}

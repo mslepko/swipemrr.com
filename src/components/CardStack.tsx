@@ -54,9 +54,10 @@ function getDailySeed(): number {
 
 interface CardStackProps {
   filters?: Filters;
+  onFetchedAt?: (fetchedAt: number) => void;
 }
 
-export default function CardStack({ filters }: CardStackProps) {
+export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
   const [startups, setStartups] = useState<TrustMRRStartup[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -130,6 +131,7 @@ export default function CardStack({ filters }: CardStackProps) {
         if (!res.ok) throw new Error("Failed to fetch");
         const json = await res.json();
         const allStartups: TrustMRRStartup[] = json.data;
+        if (json.meta?.fetchedAt) onFetchedAt?.(json.meta.fetchedAt);
 
         // Apply filters client-side
         const filtered = applyFilters(allStartups);
