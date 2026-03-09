@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   motion,
   useMotionValue,
   useTransform,
-  AnimatePresence,
+  animate,
   PanInfo,
 } from "framer-motion";
 import { TrustMRRStartup, ApiResponse } from "@/lib/types";
@@ -22,6 +22,7 @@ import StartupCard from "./StartupCard";
 import EmptyState from "./EmptyState";
 
 const SWIPE_THRESHOLD = 120;
+const FLY_DISTANCE = 600;
 
 export default function CardStack() {
   const [startups, setStartups] = useState<TrustMRRStartup[]>([]);
@@ -31,14 +32,15 @@ export default function CardStack() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [savedCount, setSavedCount] = useState(0);
-  const [exitDirection, setExitDirection] = useState<"left" | "right" | null>(
-    null
-  );
+  const [swiping, setSwiping] = useState(false);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-12, 0, 12]);
   const saveOpacity = useTransform(x, [0, 100], [0, 1]);
   const skipOpacity = useTransform(x, [-100, 0], [1, 0]);
+
+  const startupsRef = useRef(startups);
+  startupsRef.current = startups;
 
   const fetchData = useCallback(
     async (pageNum: number, append = false) => {
@@ -59,29 +61,35 @@ export default function CardStack() {
         const newStartups = data.data.filter((s) => !seen.has(s.slug));
 
         if (append) {
-          setStartups((prev) => [...prev, ...newStartups]);
+          setStartups((prev) => {
+            const combined = [...prev, ...newStartups];
+            setCachedData({
+              startups: combined,
+              cachedAt: Date.now(),
+              page: data.meta.page,
+              hasMore: data.meta.hasMore,
+            });
+            return combined;
+          });
         } else {
           setStartups(newStartups);
           setCurrentIndex(0);
+          setCachedData({
+            startups: newStartups,
+            cachedAt: Date.now(),
+            page: data.meta.page,
+            hasMore: data.meta.hasMore,
+          });
         }
         setHasMore(data.meta.hasMore);
         setPage(data.meta.page);
-
-        setCachedData({
-          startups: append
-            ? [...startups, ...newStartups]
-            : newStartups,
-          cachedAt: Date.now(),
-          page: data.meta.page,
-          hasMore: data.meta.hasMore,
-        });
       } catch {
         setError("Something went wrong. Please try again.");
       } finally {
         setLoading(false);
       }
     },
-    [startups]
+    []
   );
 
   useEffect(() => {
@@ -97,12 +105,11 @@ export default function CardStack() {
       fetchData(1);
     }
     setSavedCount(getSavedStartups().length);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchData]);
 
-  const handleSwipe = useCallback(
+  const advanceCard = useCallback(
     (direction: "left" | "right") => {
-      const current = startups[currentIndex];
+      const current = startupsRef.current[currentIndex];
       if (!current) return;
 
       addSeenSlug(current.slug);
@@ -112,30 +119,66 @@ export default function CardStack() {
         setSavedCount(getSavedStartups().length);
       }
 
-      setExitDirection(direction);
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
 
-      setTimeout(() => {
-        setExitDirection(null);
-        const nextIndex = currentIndex + 1;
-        setCurrentIndex(nextIndex);
-
-        if (nextIndex >= startups.length - 5 && hasMore) {
-          fetchData(page + 1, true);
-        }
-      }, 300);
+      if (nextIndex >= startupsRef.current.length - 5 && hasMore) {
+        fetchData(page + 1, true);
+      }
     },
-    [startups, currentIndex, hasMore, page, fetchData]
+    [currentIndex, hasMore, page, fetchData]
+  );
+
+  const handleSwipe = useCallback(
+    async (direction: "left" | "right") => {
+      if (swiping) return;
+      setSwiping(true);
+
+      const targetX = direction === "right" ? FLY_DISTANCE : -FLY_DISTANCE;
+
+      await animate(x, targetX, {
+        type: "tween",
+        duration: 0.3,
+        ease: "easeOut",
+      });
+
+      advanceCard(direction);
+      x.jump(0);
+      setSwiping(false);
+    },
+    [swiping, x, advanceCard]
   );
 
   const handleDragEnd = useCallback(
-    (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    async (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      if (swiping) return;
+
       if (info.offset.x > SWIPE_THRESHOLD) {
-        handleSwipe("right");
+        setSwiping(true);
+        await animate(x, FLY_DISTANCE, {
+          type: "tween",
+          duration: 0.2,
+          ease: "easeOut",
+        });
+        advanceCard("right");
+        x.jump(0);
+        setSwiping(false);
       } else if (info.offset.x < -SWIPE_THRESHOLD) {
-        handleSwipe("left");
+        setSwiping(true);
+        await animate(x, -FLY_DISTANCE, {
+          type: "tween",
+          duration: 0.2,
+          ease: "easeOut",
+        });
+        advanceCard("left");
+        x.jump(0);
+        setSwiping(false);
+      } else {
+        // Snap back to center
+        animate(x, 0, { type: "spring", stiffness: 500, damping: 30 });
       }
     },
-    [handleSwipe]
+    [swiping, x, advanceCard]
   );
 
   const handleRefresh = useCallback(() => {
@@ -173,8 +216,11 @@ export default function CardStack() {
   return (
     <div>
       <div className="relative h-[480px] w-full">
-        <AnimatePresence>
-          {remaining.slice(0, 3).map((startup, i) => {
+        {remaining
+          .slice(0, 3)
+          .reverse()
+          .map((startup, reverseI) => {
+            const i = Math.min(2, remaining.length - 1) - reverseI;
             const isTop = i === 0;
             return (
               <motion.div
@@ -184,29 +230,14 @@ export default function CardStack() {
                   zIndex: 3 - i,
                   ...(isTop ? { x, rotate } : {}),
                 }}
-                initial={{
-                  scale: 1 - i * 0.05,
-                  y: i * 8,
-                }}
                 animate={{
                   scale: 1 - i * 0.05,
                   y: i * 8,
                 }}
-                exit={
-                  exitDirection
-                    ? {
-                        x: exitDirection === "right" ? 400 : -400,
-                        rotate: exitDirection === "right" ? 20 : -20,
-                        opacity: 0,
-                        transition: { duration: 0.3 },
-                      }
-                    : undefined
-                }
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                drag={isTop ? "x" : false}
+                drag={isTop && !swiping ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={1}
-                dragSnapToOrigin
                 onDragEnd={isTop ? handleDragEnd : undefined}
               >
                 {isTop && (
@@ -233,13 +264,13 @@ export default function CardStack() {
               </motion.div>
             );
           })}
-        </AnimatePresence>
       </div>
 
       <div className="mt-6 flex items-center justify-center gap-8">
         <button
           onClick={() => handleSwipe("left")}
-          className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-red-200 text-red-400 shadow-md transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-500 active:scale-95"
+          disabled={swiping}
+          className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-red-200 text-red-400 shadow-md transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-500 active:scale-95 disabled:opacity-50"
           aria-label="Skip"
         >
           <svg
@@ -253,7 +284,8 @@ export default function CardStack() {
         </button>
         <button
           onClick={() => handleSwipe("right")}
-          className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-green-200 text-green-400 shadow-md transition-all hover:border-green-400 hover:bg-green-50 hover:text-green-500 active:scale-95"
+          disabled={swiping}
+          className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-green-200 text-green-400 shadow-md transition-all hover:border-green-400 hover:bg-green-50 hover:text-green-500 active:scale-95 disabled:opacity-50"
           aria-label="Save"
         >
           <svg
