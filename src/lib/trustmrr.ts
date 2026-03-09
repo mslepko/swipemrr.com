@@ -71,6 +71,25 @@ export async function fetchStartups(
   };
 }
 
+export async function fetchAllStartups(): Promise<TrustMRRStartup[]> {
+  const all: TrustMRRStartup[] = [];
+  let page = 1;
+  let hasMore = true;
+
+  while (hasMore) {
+    const data = await fetchStartups({
+      onSale: "true",
+      limit: "50",
+      page: String(page),
+    });
+    all.push(...data.data);
+    hasMore = data.meta.hasMore;
+    page++;
+  }
+
+  return all;
+}
+
 export class RateLimitError extends Error {
   retryAfter: number;
   constructor(retryAfter: number) {

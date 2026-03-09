@@ -10,7 +10,6 @@ import {
 } from "framer-motion";
 import {
   TrustMRRStartup,
-  ApiResponse,
   SwipeHistoryEntry,
   Filters,
 } from "@/lib/types";
@@ -78,31 +77,43 @@ export default function CardStack({ filters }: CardStackProps) {
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
 
-  const buildUrl = useCallback(
-    (pageNum: number) => {
-      const params = new URLSearchParams({
-        onSale: "true",
-        limit: "50",
-        page: String(pageNum),
-        sort: filters?.sort || "best-deal",
-      });
-      if (filters?.category) params.set("category", filters.category);
-      if (filters?.minMrr != null)
-        params.set("minMrr", String(filters.minMrr));
-      if (filters?.maxMrr != null)
-        params.set("maxMrr", String(filters.maxMrr));
-      if (filters?.minPrice != null)
-        params.set("minPrice", String(filters.minPrice));
-      if (filters?.maxPrice != null)
-        params.set("maxPrice", String(filters.maxPrice));
-      if (filters?.minGrowth != null)
-        params.set("minGrowth", String(filters.minGrowth));
-      return `/api/startups?${params.toString()}`;
+  // Apply client-side filters to the full dataset
+  const applyFilters = useCallback(
+    (all: TrustMRRStartup[]): TrustMRRStartup[] => {
+      let result = all;
+      const f = filtersRef.current;
+
+      if (f?.sort === "multiple-asc") {
+        result = result.filter(
+          (s) => s.mrr != null && s.mrr > 0 && s.multiple != null
+        );
+        result.sort((a, b) => (a.multiple ?? 999) - (b.multiple ?? 999));
+      }
+      if (f?.category) {
+        result = result.filter((s) => s.category === f.category);
+      }
+      if (f?.minMrr != null) {
+        result = result.filter((s) => (s.mrr ?? 0) >= f.minMrr!);
+      }
+      if (f?.maxMrr != null) {
+        result = result.filter((s) => (s.mrr ?? 0) <= f.maxMrr!);
+      }
+      if (f?.minPrice != null) {
+        result = result.filter((s) => (s.askingPrice ?? 0) >= f.minPrice!);
+      }
+      if (f?.maxPrice != null) {
+        result = result.filter((s) => (s.askingPrice ?? 0) <= f.maxPrice!);
+      }
+      if (f?.minGrowth != null) {
+        result = result.filter((s) => (s.growth30d ?? 0) >= f.minGrowth!);
+      }
+
+      return result;
     },
-    [filters]
+    []
   );
 
-  // Fetch ALL pages, then shuffle and filter seen
+  // Fetch all startups from the server-side cached endpoint (single request)
   const fetchAllStartups = useCallback(
     async (isRefresh = false) => {
       if (!isRefresh) {
@@ -111,30 +122,17 @@ export default function CardStack({ filters }: CardStackProps) {
       }
 
       try {
-        const allStartups: TrustMRRStartup[] = [];
-        let pageNum = 1;
-        let hasMore = true;
-
-        while (hasMore) {
-          const res = await fetch(buildUrl(pageNum));
-          if (res.status === 429) {
-            if (!isRefresh) setError("Too many requests, please wait a moment");
-            return;
-          }
-          if (!res.ok) throw new Error("Failed to fetch");
-          const data: ApiResponse = await res.json();
-          allStartups.push(...data.data);
-          hasMore = data.meta.hasMore;
-          pageNum++;
+        const res = await fetch("/api/startups/all");
+        if (res.status === 429) {
+          if (!isRefresh) setError("Too many requests, please wait a moment");
+          return;
         }
+        if (!res.ok) throw new Error("Failed to fetch");
+        const json = await res.json();
+        const allStartups: TrustMRRStartup[] = json.data;
 
-        // Filter out Hot Deals junk
-        let filtered = allStartups;
-        if (filtersRef.current?.sort === "multiple-asc") {
-          filtered = filtered.filter(
-            (s) => s.mrr != null && s.mrr > 0 && s.multiple != null
-          );
-        }
+        // Apply filters client-side
+        const filtered = applyFilters(allStartups);
 
         // Shuffle with daily seed for random order
         const shuffled = seededShuffle(filtered, getDailySeed());
@@ -174,14 +172,25 @@ export default function CardStack({ filters }: CardStackProps) {
         if (!isRefresh) setLoading(false);
       }
     },
-    [buildUrl]
+    [applyFilters]
   );
 
-  // Initial load: try cache first, then fetch
+  // Initial load + filter changes
   useEffect(() => {
     if (initialLoadDone.current) {
-      // Filters changed — reset everything
-      clearCache();
+      // Filters changed — re-apply from cache if available, else refetch
+      const cached = getCachedData();
+      if (cached && cached.startups.length > 0) {
+        const filtered = applyFilters(cached.startups);
+        const seen = getSeenSlugs();
+        const unseen = filtered.filter((s) => !seen.has(s.slug));
+        const shuffled = seededShuffle(unseen, getDailySeed());
+        setStartups(shuffled);
+        setCurrentIndex(0);
+        clearPosition();
+        setSwipeHistory([]);
+        return;
+      }
       clearPosition();
       setSwipeHistory([]);
       fetchAllStartups();
@@ -189,20 +198,17 @@ export default function CardStack({ filters }: CardStackProps) {
       initialLoadDone.current = true;
       const cached = getCachedData();
       if (cached && cached.startups.length > 0) {
+        const filtered = applyFilters(cached.startups);
         const seen = getSeenSlugs();
-        let unseen = cached.startups.filter((s) => !seen.has(s.slug));
+        const unseen = filtered.filter((s) => !seen.has(s.slug));
+        const shuffled = seededShuffle(unseen, getDailySeed());
 
-        if (filters?.sort === "multiple-asc") {
-          unseen = unseen.filter(
-            (s) => s.mrr != null && s.mrr > 0 && s.multiple != null
-          );
-        }
-
-        if (unseen.length > 0) {
-          setStartups(unseen);
+        if (shuffled.length > 0) {
+          setStartups(shuffled);
           const savedPos = getPosition();
-          setCurrentIndex(Math.min(savedPos, unseen.length - 1));
+          setCurrentIndex(Math.min(savedPos, shuffled.length - 1));
           setLoading(false);
+          setSavedCount(getSavedStartups().length);
           return;
         }
       }
@@ -210,7 +216,7 @@ export default function CardStack({ filters }: CardStackProps) {
     }
     setSavedCount(getSavedStartups().length);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchAllStartups]);
+  }, [fetchAllStartups, filters]);
 
   // Background refresh every 30 min
   useEffect(() => {
