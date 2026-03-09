@@ -18,7 +18,7 @@ function formatRefreshed(ts: number): string {
 export default function Footer({ fetchedAt }: FooterProps) {
   return (
     <footer className="mt-6 border-t border-gray-100 pt-4 pb-2">
-      <div className="flex items-center justify-between text-[11px] text-gray-400">
+      <div className="flex flex-col items-center gap-1 text-[11px] text-gray-400">
         <div>
           Data by{" "}
           <a
@@ -34,7 +34,8 @@ export default function Footer({ fetchedAt }: FooterProps) {
               (refreshed {formatRefreshed(fetchedAt)})
             </span>
           )}
-          {" · "}
+        </div>
+        <div className="flex items-center gap-1">
           Built with ☕ by{" "}
           <a
             href="https://michalslepko.dev/"
@@ -44,23 +45,23 @@ export default function Footer({ fetchedAt }: FooterProps) {
           >
             Michal
           </a>
-        </div>
-        <a
-          href="https://twitter.com/michal_codes"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-gray-400 transition-colors hover:text-gray-700"
-          aria-label="Follow on X"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className="h-4 w-4"
-            aria-hidden="true"
+          <a
+            href="https://x.com/michal_codes"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-400 transition-colors hover:text-gray-700"
+            aria-label="Follow on X"
           >
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-          </svg>
-        </a>
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-3.5 w-3.5"
+              aria-hidden="true"
+            >
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </a>
+        </div>
       </div>
     </footer>
   );
