@@ -3,13 +3,13 @@
 import { TrustMRRStartup } from "@/lib/types";
 import { formatCurrency } from "@/lib/storage";
 
+// Keyed by lowercase category name as returned by the TrustMRR API
 const CATEGORY_COLORS: Record<string, string> = {
-  ai: "bg-purple-100 text-purple-800",
+  "artificial intelligence": "bg-purple-100 text-purple-800",
   saas: "bg-blue-100 text-blue-800",
   "developer tools": "bg-gray-100 text-gray-800",
   fintech: "bg-green-100 text-green-800",
   marketing: "bg-orange-100 text-orange-800",
-  ecommerce: "bg-yellow-100 text-yellow-800",
   "e-commerce": "bg-yellow-100 text-yellow-800",
   productivity: "bg-indigo-100 text-indigo-800",
   "design tools": "bg-pink-100 text-pink-800",
