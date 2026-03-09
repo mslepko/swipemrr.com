@@ -8,10 +8,17 @@ import {
   animate,
   PanInfo,
 } from "framer-motion";
-import { TrustMRRStartup, ApiResponse } from "@/lib/types";
+import {
+  TrustMRRStartup,
+  ApiResponse,
+  SwipeHistoryEntry,
+  Filters,
+} from "@/lib/types";
 import {
   saveStartup,
+  removeStartup,
   addSeenSlug,
+  removeSeenSlug,
   getCachedData,
   setCachedData,
   clearCache,
@@ -23,8 +30,13 @@ import EmptyState from "./EmptyState";
 
 const SWIPE_THRESHOLD = 120;
 const FLY_DISTANCE = 600;
+const MAX_UNDO_HISTORY = 10;
 
-export default function CardStack() {
+interface CardStackProps {
+  filters?: Filters;
+}
+
+export default function CardStack({ filters }: CardStackProps) {
   const [startups, setStartups] = useState<TrustMRRStartup[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -33,6 +45,7 @@ export default function CardStack() {
   const [hasMore, setHasMore] = useState(true);
   const [savedCount, setSavedCount] = useState(0);
   const [swiping, setSwiping] = useState(false);
+  const [swipeHistory, setSwipeHistory] = useState<SwipeHistoryEntry[]>([]);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-12, 0, 12]);
@@ -42,14 +55,36 @@ export default function CardStack() {
   const startupsRef = useRef(startups);
   startupsRef.current = startups;
 
+  const buildUrl = useCallback(
+    (pageNum: number) => {
+      const params = new URLSearchParams({
+        onSale: "true",
+        limit: "50",
+        page: String(pageNum),
+        sort: filters?.sort || "best-deal",
+      });
+      if (filters?.category) params.set("category", filters.category);
+      if (filters?.minMrr != null)
+        params.set("minMrr", String(filters.minMrr));
+      if (filters?.maxMrr != null)
+        params.set("maxMrr", String(filters.maxMrr));
+      if (filters?.minPrice != null)
+        params.set("minPrice", String(filters.minPrice));
+      if (filters?.maxPrice != null)
+        params.set("maxPrice", String(filters.maxPrice));
+      if (filters?.minGrowth != null)
+        params.set("minGrowth", String(filters.minGrowth));
+      return `/api/startups?${params.toString()}`;
+    },
+    [filters]
+  );
+
   const fetchData = useCallback(
     async (pageNum: number, append = false) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(
-          `/api/startups?onSale=true&limit=50&sort=best-deal&page=${pageNum}`
-        );
+        const res = await fetch(buildUrl(pageNum));
         if (res.status === 429) {
           setError("Too many requests, please wait a moment");
           return;
@@ -89,21 +124,14 @@ export default function CardStack() {
         setLoading(false);
       }
     },
-    []
+    [buildUrl]
   );
 
+  // Refetch when filters change
   useEffect(() => {
-    const cached = getCachedData();
-    if (cached) {
-      const seen = getSeenSlugs();
-      const unseen = cached.startups.filter((s) => !seen.has(s.slug));
-      setStartups(unseen);
-      setHasMore(cached.hasMore);
-      setPage(cached.page);
-      setLoading(false);
-    } else {
-      fetchData(1);
-    }
+    clearCache();
+    setSwipeHistory([]);
+    fetchData(1);
     setSavedCount(getSavedStartups().length);
   }, [fetchData]);
 
@@ -111,6 +139,11 @@ export default function CardStack() {
     (direction: "left" | "right") => {
       const current = startupsRef.current[currentIndex];
       if (!current) return;
+
+      setSwipeHistory((prev) => [
+        ...prev.slice(-MAX_UNDO_HISTORY + 1),
+        { slug: current.slug, direction, index: currentIndex },
+      ]);
 
       addSeenSlug(current.slug);
 
@@ -149,6 +182,22 @@ export default function CardStack() {
     [swiping, x, advanceCard]
   );
 
+  const handleUndo = useCallback(() => {
+    if (swiping || swipeHistory.length === 0) return;
+
+    const last = swipeHistory[swipeHistory.length - 1];
+    setSwipeHistory((prev) => prev.slice(0, -1));
+
+    removeSeenSlug(last.slug);
+
+    if (last.direction === "right") {
+      removeStartup(last.slug);
+      setSavedCount(getSavedStartups().length);
+    }
+
+    setCurrentIndex(last.index);
+  }, [swiping, swipeHistory]);
+
   const handleDragEnd = useCallback(
     async (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       if (swiping) return;
@@ -174,17 +223,41 @@ export default function CardStack() {
         x.jump(0);
         setSwiping(false);
       } else {
-        // Snap back to center
         animate(x, 0, { type: "spring", stiffness: 500, damping: 30 });
       }
     },
     [swiping, x, advanceCard]
   );
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (swiping) return;
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        handleSwipe("left");
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        handleSwipe("right");
+      } else if (
+        e.key === "z" &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        swipeHistory.length > 0
+      ) {
+        e.preventDefault();
+        handleUndo();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [swiping, handleSwipe, handleUndo, swipeHistory.length]);
+
   const handleRefresh = useCallback(() => {
     clearCache();
     setStartups([]);
     setCurrentIndex(0);
+    setSwipeHistory([]);
     fetchData(1);
   }, [fetchData]);
 
@@ -266,7 +339,7 @@ export default function CardStack() {
           })}
       </div>
 
-      <div className="mt-6 flex items-center justify-center gap-8">
+      <div className="mt-6 flex items-center justify-center gap-4">
         <button
           onClick={() => handleSwipe("left")}
           disabled={swiping}
@@ -282,6 +355,29 @@ export default function CardStack() {
             <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L10.94 12l-5.72 5.72a.75.75 0 101.06 1.06L12 13.06l5.72 5.72a.75.75 0 101.06-1.06L13.06 12l5.72-5.72a.75.75 0 00-1.06-1.06L12 10.94 6.28 5.22z" />
           </svg>
         </button>
+
+        {swipeHistory.length > 0 && (
+          <button
+            onClick={handleUndo}
+            disabled={swiping}
+            className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-gray-200 text-gray-400 shadow-sm transition-all hover:border-gray-400 hover:bg-gray-50 hover:text-gray-600 active:scale-95 disabled:opacity-50"
+            aria-label="Undo last swipe"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-5 w-5"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9.53 2.47a.75.75 0 010 1.06L4.81 8.25H15a6.75 6.75 0 010 13.5h-3a.75.75 0 010-1.5h3a5.25 5.25 0 100-10.5H4.81l4.72 4.72a.75.75 0 11-1.06 1.06l-6-6a.75.75 0 010-1.06l6-6a.75.75 0 011.06 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        )}
+
         <button
           onClick={() => handleSwipe("right")}
           disabled={swiping}
@@ -299,7 +395,9 @@ export default function CardStack() {
         </button>
       </div>
 
-      <p className="mt-3 text-center text-xs text-gray-400">Swipe or tap</p>
+      <p className="mt-3 text-center text-xs text-gray-400">
+        Swipe, tap, or use ← → keys
+      </p>
     </div>
   );
 }

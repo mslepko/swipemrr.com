@@ -44,6 +44,22 @@ export interface ApiResponse {
   };
 }
 
+export interface SwipeHistoryEntry {
+  slug: string;
+  direction: "left" | "right";
+  index: number;
+}
+
+export interface Filters {
+  category?: string;
+  minMrr?: number;
+  maxMrr?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  minGrowth?: number;
+  sort?: string;
+}
+
 // Raw shape from the TrustMRR API (used for normalization in the proxy route)
 export interface RawTrustMRRStartup {
   name: string;

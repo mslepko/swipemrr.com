@@ -81,6 +81,12 @@ export function addSeenSlug(slug: string): void {
   localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
 }
 
+export function removeSeenSlug(slug: string): void {
+  const seen = getSeenSlugs();
+  seen.delete(slug);
+  localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
+}
+
 export function formatCurrency(dollars: number | undefined | null): string {
   if (dollars == null) return "N/A";
   if (dollars >= 1_000_000) {

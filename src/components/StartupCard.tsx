@@ -1,7 +1,10 @@
 "use client";
 
+import { useRef } from "react";
 import { TrustMRRStartup } from "@/lib/types";
 import { formatCurrency } from "@/lib/storage";
+import MrrSparkline from "./MrrSparkline";
+import ShareButton from "./ShareButton";
 
 // Keyed by lowercase category name as returned by the TrustMRR API
 const CATEGORY_COLORS: Record<string, string> = {
@@ -56,9 +59,11 @@ interface StartupCardProps {
 
 export default function StartupCard({ startup }: StartupCardProps) {
   const categoryColor = getCategoryColor(startup.category);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="flex h-full w-full flex-col justify-between rounded-2xl bg-white p-6 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
+    <div ref={cardRef} className="relative flex h-full w-full flex-col justify-between rounded-2xl bg-white p-6 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
+      <ShareButton cardRef={cardRef} startup={startup} />
       <div>
         <div className="mb-3 flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -98,6 +103,10 @@ export default function StartupCard({ startup }: StartupCardProps) {
         <p className="mb-5 line-clamp-3 text-sm leading-relaxed text-gray-600">
           {startup.description}
         </p>
+
+        {startup.mrr != null && startup.growth30d != null && (
+          <MrrSparkline mrr={startup.mrr} growth30d={startup.growth30d} />
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div>
