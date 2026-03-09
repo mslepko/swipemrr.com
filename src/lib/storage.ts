@@ -22,9 +22,9 @@ export function saveStartup(startup: TrustMRRStartup): void {
     slug: startup.slug,
     name: startup.name,
     category: startup.category,
-    currentMrr: startup.currentMrr,
+    mrr: startup.mrr,
     askingPrice: startup.askingPrice,
-    revenueMultiple: startup.revenueMultiple,
+    multiple: startup.multiple,
     savedAt: new Date().toISOString(),
   });
   localStorage.setItem(SAVED_KEY, JSON.stringify(saved));
@@ -76,14 +76,13 @@ export function addSeenSlug(slug: string): void {
   localStorage.setItem(SEEN_KEY, JSON.stringify([...seen]));
 }
 
-export function formatCurrency(cents: number | undefined | null): string {
-  if (cents == null) return "N/A";
-  const dollars = cents / 100;
+export function formatCurrency(dollars: number | undefined | null): string {
+  if (dollars == null) return "N/A";
   if (dollars >= 1_000_000) {
     return `$${(dollars / 1_000_000).toFixed(1)}M`;
   }
   if (dollars >= 1_000) {
     return `$${(dollars / 1_000).toFixed(1)}K`;
   }
-  return `$${dollars.toFixed(0)}`;
+  return `$${dollars.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 }

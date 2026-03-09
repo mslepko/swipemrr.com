@@ -1,6 +1,35 @@
-import { ApiResponse } from "./types";
+import { RawTrustMRRStartup, TrustMRRStartup, ApiResponse } from "./types";
 
 const BASE_URL = "https://trustmrr.com/api/v1";
+
+function normalizeStartup(raw: RawTrustMRRStartup): TrustMRRStartup {
+  return {
+    name: raw.name,
+    slug: raw.slug,
+    category: raw.category,
+    description: raw.description,
+    mrr: raw.revenue?.mrr,
+    totalRevenue: raw.revenue?.total,
+    last30DaysRevenue: raw.revenue?.last30Days,
+    growth30d: raw.growth30d,
+    onSale: raw.onSale,
+    askingPrice: raw.askingPrice,
+    multiple: raw.multiple,
+    logo: raw.icon,
+    foundedDate: raw.foundedDate,
+    customers: raw.customers,
+  };
+}
+
+interface RawApiResponse {
+  data: RawTrustMRRStartup[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    hasMore: boolean;
+  };
+}
 
 export async function fetchStartups(
   params: Record<string, string>
@@ -34,7 +63,12 @@ export async function fetchStartups(
     throw new Error(`API error: ${res.status}`);
   }
 
-  return res.json();
+  const raw: RawApiResponse = await res.json();
+
+  return {
+    data: raw.data.map(normalizeStartup),
+    meta: raw.meta,
+  };
 }
 
 export class RateLimitError extends Error {

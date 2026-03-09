@@ -6,36 +6,42 @@ import { formatCurrency } from "@/lib/storage";
 const CATEGORY_COLORS: Record<string, string> = {
   ai: "bg-purple-100 text-purple-800",
   saas: "bg-blue-100 text-blue-800",
-  "developer-tools": "bg-gray-100 text-gray-800",
+  "developer tools": "bg-gray-100 text-gray-800",
   fintech: "bg-green-100 text-green-800",
   marketing: "bg-orange-100 text-orange-800",
   ecommerce: "bg-yellow-100 text-yellow-800",
+  "e-commerce": "bg-yellow-100 text-yellow-800",
   productivity: "bg-indigo-100 text-indigo-800",
-  "design-tools": "bg-pink-100 text-pink-800",
+  "design tools": "bg-pink-100 text-pink-800",
   "no-code": "bg-teal-100 text-teal-800",
   analytics: "bg-cyan-100 text-cyan-800",
-  "crypto-web3": "bg-amber-100 text-amber-800",
+  "crypto & web3": "bg-amber-100 text-amber-800",
   education: "bg-emerald-100 text-emerald-800",
-  "health-fitness": "bg-rose-100 text-rose-800",
-  "social-media": "bg-violet-100 text-violet-800",
-  "content-creation": "bg-fuchsia-100 text-fuchsia-800",
+  "health & fitness": "bg-rose-100 text-rose-800",
+  "social media": "bg-violet-100 text-violet-800",
+  "content creation": "bg-fuchsia-100 text-fuchsia-800",
   sales: "bg-lime-100 text-lime-800",
-  "customer-support": "bg-sky-100 text-sky-800",
+  "customer support": "bg-sky-100 text-sky-800",
   recruiting: "bg-stone-100 text-stone-800",
-  "real-estate": "bg-red-100 text-red-800",
+  "real estate": "bg-red-100 text-red-800",
   travel: "bg-blue-100 text-blue-800",
   legal: "bg-slate-100 text-slate-800",
   security: "bg-zinc-100 text-zinc-800",
-  "iot-hardware": "bg-neutral-100 text-neutral-800",
-  "green-tech": "bg-green-100 text-green-800",
+  "iot & hardware": "bg-neutral-100 text-neutral-800",
+  "green tech": "bg-green-100 text-green-800",
   entertainment: "bg-purple-100 text-purple-800",
   games: "bg-red-100 text-red-800",
   community: "bg-orange-100 text-orange-800",
-  "news-magazines": "bg-gray-100 text-gray-800",
+  "news & magazines": "bg-gray-100 text-gray-800",
   utilities: "bg-teal-100 text-teal-800",
   marketplace: "bg-indigo-100 text-indigo-800",
-  "mobile-apps": "bg-cyan-100 text-cyan-800",
+  "mobile apps": "bg-cyan-100 text-cyan-800",
 };
+
+function getCategoryColor(category: string): string {
+  const lower = category.toLowerCase();
+  return CATEGORY_COLORS[lower] || "bg-gray-100 text-gray-800";
+}
 
 function getMultipleColor(multiple: number | undefined): string {
   if (multiple == null) return "text-gray-900";
@@ -44,20 +50,12 @@ function getMultipleColor(multiple: number | undefined): string {
   return "text-gray-900";
 }
 
-function formatCategory(category: string): string {
-  return category
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
 interface StartupCardProps {
   startup: TrustMRRStartup;
 }
 
 export default function StartupCard({ startup }: StartupCardProps) {
-  const categoryColor =
-    CATEGORY_COLORS[startup.category] || "bg-gray-100 text-gray-800";
+  const categoryColor = getCategoryColor(startup.category);
 
   return (
     <div className="flex h-full w-full flex-col justify-between rounded-2xl bg-white p-6 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
@@ -67,7 +65,7 @@ export default function StartupCard({ startup }: StartupCardProps) {
           <span
             className={`ml-2 shrink-0 rounded-full px-3 py-1 text-xs font-medium ${categoryColor}`}
           >
-            {formatCategory(startup.category)}
+            {startup.category}
           </span>
         </div>
 
@@ -81,7 +79,7 @@ export default function StartupCard({ startup }: StartupCardProps) {
               MRR
             </p>
             <p className="text-2xl font-bold text-gray-900">
-              {formatCurrency(startup.currentMrr)}
+              {formatCurrency(startup.mrr)}
             </p>
           </div>
           <div>
@@ -97,19 +95,23 @@ export default function StartupCard({ startup }: StartupCardProps) {
               Multiple
             </p>
             <p
-              className={`text-2xl font-bold ${getMultipleColor(startup.revenueMultiple)}`}
+              className={`text-2xl font-bold ${getMultipleColor(startup.multiple)}`}
             >
-              {startup.revenueMultiple != null ? `${startup.revenueMultiple.toFixed(1)}x` : "N/A"}
+              {startup.multiple != null
+                ? `${startup.multiple.toFixed(1)}x`
+                : "N/A"}
             </p>
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
-              MoM Growth
+              30d Growth
             </p>
             <p
-              className={`text-2xl font-bold ${startup.momGrowth != null && startup.momGrowth >= 0 ? "text-green-600" : startup.momGrowth != null ? "text-red-600" : "text-gray-900"}`}
+              className={`text-2xl font-bold ${startup.growth30d != null && startup.growth30d >= 0 ? "text-green-600" : startup.growth30d != null ? "text-red-600" : "text-gray-900"}`}
             >
-              {startup.momGrowth != null ? `${startup.momGrowth >= 0 ? "+" : ""}${startup.momGrowth.toFixed(1)}%` : "N/A"}
+              {startup.growth30d != null
+                ? `${startup.growth30d >= 0 ? "+" : ""}${startup.growth30d.toFixed(1)}%`
+                : "N/A"}
             </p>
           </div>
         </div>
