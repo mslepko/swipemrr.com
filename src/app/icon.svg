@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22C55E"/>
+      <stop offset="100%" stop-color="#16A34A"/>
+    </linearGradient>
+  </defs>
+  <!-- Heart -->
+  <path d="M256 448l-30-28C110 316 48 260 48 192 48 136 92 92 148 92c34 0 66 16 86 40h44c20-24 52-40 86-40 56 0 100 44 100 100 0 68-62 124-178 228l-30 28z" fill="url(#hg)"/>
+  <!-- White star -->
+  <path d="M256 152l26 80h84l-68 50 26 80-68-50-68 50 26-80-68-50h84z" fill="white"/>
+  <!-- Fold accent (bottom-right of star) -->
+  <path d="M314 362l-58-42 26 80z" fill="rgba(0,0,0,0.12)"/>
+</svg>
