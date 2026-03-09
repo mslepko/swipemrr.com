@@ -368,7 +368,7 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
 
   if (error) {
     return (
-      <div className="flex h-[480px] w-full flex-col items-center justify-center rounded-2xl bg-white p-8 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
+      <div className="flex h-[560px] w-full flex-col items-center justify-center rounded-2xl bg-white p-8 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
         <div className="mb-2 text-4xl">😕</div>
         <p className="mb-4 text-center text-sm text-gray-600">{error}</p>
         <button
@@ -389,7 +389,7 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
 
   return (
     <div>
-      <div className="relative h-[480px] w-full">
+      <div className="relative h-[560px] w-full">
         {remaining
           .slice(0, 3)
           .reverse()
@@ -506,7 +506,7 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
 function SkeletonCard() {
   return (
     <div>
-      <div className="h-[480px] w-full animate-pulse rounded-2xl bg-white p-6 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
+      <div className="h-[560px] w-full animate-pulse rounded-2xl bg-white p-6 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
         <div className="mb-3 flex items-start justify-between">
           <div className="h-7 w-40 rounded bg-gray-200" />
           <div className="h-6 w-20 rounded-full bg-gray-200" />
