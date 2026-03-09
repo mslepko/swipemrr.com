@@ -41,7 +41,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   "mobile apps": "bg-cyan-100 text-cyan-800",
 };
 
-function getCategoryColor(category: string): string {
+function getCategoryColor(category: string | null | undefined): string {
+  if (!category) return "bg-gray-100 text-gray-800";
   const lower = category.toLowerCase();
   return CATEGORY_COLORS[lower] || "bg-gray-100 text-gray-800";
 }
@@ -92,13 +93,15 @@ export default function StartupCard({ startup }: StartupCardProps) {
             )}
           </div>
         </div>
-        <div className="mb-3">
-          <span
-            className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${categoryColor}`}
-          >
-            {startup.category}
-          </span>
-        </div>
+        {startup.category && (
+          <div className="mb-3">
+            <span
+              className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${categoryColor}`}
+            >
+              {startup.category}
+            </span>
+          </div>
+        )}
 
         <p className="mb-5 line-clamp-3 text-sm leading-relaxed text-gray-600">
           {startup.description}
