@@ -61,7 +61,33 @@ export default function StartupCard({ startup }: StartupCardProps) {
     <div className="flex h-full w-full flex-col justify-between rounded-2xl bg-white p-6 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
       <div>
         <div className="mb-3 flex items-start justify-between">
-          <h2 className="text-xl font-bold text-gray-900">{startup.name}</h2>
+          <div className="flex items-center gap-3">
+            {startup.logo ? (
+              <img
+                src={startup.logo}
+                alt=""
+                className="h-10 w-10 shrink-0 rounded-lg bg-gray-100 object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            ) : (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-lg font-bold text-gray-400">
+                {startup.name.charAt(0)}
+              </div>
+            )}
+            <div>
+              <h2 className="text-xl font-bold leading-tight text-gray-900">
+                {startup.name}
+              </h2>
+              {startup.foundedDate && (
+                <p className="text-xs text-gray-400">
+                  Founded{" "}
+                  {new Date(startup.foundedDate).getFullYear()}
+                </p>
+              )}
+            </div>
+          </div>
           <span
             className={`ml-2 shrink-0 rounded-full px-3 py-1 text-xs font-medium ${categoryColor}`}
           >
