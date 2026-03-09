@@ -1,9 +1,14 @@
 import { SavedStartup, TrustMRRStartup, CachedData } from "./types";
 
 const SAVED_KEY = "swipemrr_saved";
-const CACHE_KEY = "swipemrr_cache";
+const CACHE_KEY = "swipemrr_cache_v2";
 const SEEN_KEY = "swipemrr_seen";
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
+
+// Clean up old cache keys from previous versions
+if (typeof window !== "undefined") {
+  localStorage.removeItem("swipemrr_cache");
+}
 
 export function getSavedStartups(): SavedStartup[] {
   if (typeof window === "undefined") return [];
