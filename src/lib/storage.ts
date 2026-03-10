@@ -31,6 +31,10 @@ export function saveStartup(startup: TrustMRRStartup): void {
     askingPrice: startup.askingPrice,
     multiple: startup.multiple,
     savedAt: new Date().toISOString(),
+    description: startup.description,
+    logo: startup.logo,
+    foundedDate: startup.foundedDate,
+    growth30d: startup.growth30d,
   });
   localStorage.setItem(SAVED_KEY, JSON.stringify(saved));
 }
