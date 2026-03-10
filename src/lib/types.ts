@@ -25,6 +25,10 @@ export interface SavedStartup {
   askingPrice?: number;
   multiple?: number;
   savedAt: string;
+  description?: string;
+  logo?: string;
+  foundedDate?: string;
+  growth30d?: number;
 }
 
 export interface CachedData {
