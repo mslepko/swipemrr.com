@@ -376,7 +376,7 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
 
   if (error) {
     return (
-      <div className="flex h-[560px] w-full flex-col items-center justify-center rounded-2xl bg-white p-8 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
+      <div className="flex h-full w-full flex-col items-center justify-center rounded-2xl bg-white p-8 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
         <div className="mb-2 text-4xl">😕</div>
         <p className="mb-4 text-center text-sm text-gray-600">{error}</p>
         <button
@@ -396,8 +396,8 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
   }
 
   return (
-    <div>
-      <div className="relative h-[560px] w-full">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="relative min-h-0 flex-1 w-full">
         {remaining
           .slice(0, 3)
           .reverse()
@@ -451,7 +451,7 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
           })}
       </div>
 
-      <div className="mt-6 flex items-center justify-center gap-4">
+      <div className="mt-3 flex shrink-0 items-center justify-center gap-4">
         <button
           onClick={() => handleSwipe("left")}
           disabled={swiping}
@@ -507,7 +507,7 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
         </button>
       </div>
 
-      <p className="mt-3 text-center text-xs text-gray-400">
+      <p className="mt-1 shrink-0 text-center text-xs text-gray-400">
         Swipe, tap, or use ← → keys
       </p>
     </div>
@@ -516,8 +516,8 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
 
 function SkeletonCard() {
   return (
-    <div>
-      <div className="h-[560px] w-full animate-pulse rounded-2xl bg-white p-6 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 w-full animate-pulse rounded-2xl bg-white p-6 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
         <div className="mb-3 flex items-start justify-between">
           <div className="h-7 w-40 rounded bg-gray-200" />
           <div className="h-6 w-20 rounded-full bg-gray-200" />
