@@ -72,7 +72,7 @@ export default function DigestPage() {
   });
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-[420px] flex-col px-4 py-6">
+    <div className="mx-auto flex h-dvh max-w-[420px] flex-col overflow-y-auto px-4 py-6">
       <header className="mb-4 flex items-center justify-between">
         <Link
           href="/"

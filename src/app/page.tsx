@@ -42,7 +42,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-[420px] flex-col overflow-x-hidden px-4 py-6">
+    <div className="mx-auto flex h-dvh max-w-[420px] flex-col overflow-hidden px-4 py-4">
       <header className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900">
           Swipe<span className="text-green-600">MRR</span>
@@ -112,7 +112,7 @@ export default function Home() {
         </button>
       </div>
 
-      <main className="flex-1">
+      <main className="flex min-h-0 flex-1 flex-col">
         <CardStack filters={filters} onFetchedAt={setFetchedAt} />
       </main>
 

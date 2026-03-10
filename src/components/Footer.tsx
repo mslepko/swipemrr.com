@@ -17,7 +17,7 @@ function formatRefreshed(ts: number): string {
 
 export default function Footer({ fetchedAt }: FooterProps) {
   return (
-    <footer className="mt-6 border-t border-gray-100 pt-4 pb-2">
+    <footer className="mt-3 shrink-0 border-t border-gray-100 pt-2 pb-1">
       <div className="flex items-center justify-between text-[11px] text-gray-400">
         <div>
           Data by{" "}

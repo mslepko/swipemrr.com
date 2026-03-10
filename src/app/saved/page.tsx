@@ -5,7 +5,7 @@ import SavedList from "@/components/SavedList";
 
 export default function SavedPage() {
   return (
-    <div className="mx-auto flex min-h-screen max-w-[420px] flex-col px-4 py-6">
+    <div className="mx-auto flex h-dvh max-w-[420px] flex-col overflow-y-auto px-4 py-6">
       <header className="mb-6 flex items-center gap-3">
         <Link
           href="/"

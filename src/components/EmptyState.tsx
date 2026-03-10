@@ -9,7 +9,7 @@ interface EmptyStateProps {
 
 export default function EmptyState({ savedCount, onRefresh }: EmptyStateProps) {
   return (
-    <div className="flex h-[480px] w-full flex-col items-center justify-center rounded-2xl bg-white p-8 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
+    <div className="flex h-full w-full flex-col items-center justify-center rounded-2xl bg-white p-8 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
       <div className="mb-2 text-5xl">🎉</div>
       <h2 className="mb-2 text-xl font-bold text-gray-900">
         You&apos;ve seen all available startups!
