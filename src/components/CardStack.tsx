@@ -30,7 +30,8 @@ import {
 import StartupCard from "./StartupCard";
 import EmptyState from "./EmptyState";
 
-const SWIPE_THRESHOLD = 80;
+const SWIPE_THRESHOLD = 50;
+const SWIPE_VELOCITY = 500;
 const FLY_DISTANCE = 600;
 const MAX_UNDO_HISTORY = 10;
 const REFRESH_INTERVAL = 30 * 60 * 1000; // 30 min background refresh
@@ -302,7 +303,14 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
     async (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       if (swiping) return;
 
-      if (info.offset.x > SWIPE_THRESHOLD) {
+      const swipeRight =
+        info.offset.x > SWIPE_THRESHOLD ||
+        info.velocity.x > SWIPE_VELOCITY;
+      const swipeLeft =
+        info.offset.x < -SWIPE_THRESHOLD ||
+        info.velocity.x < -SWIPE_VELOCITY;
+
+      if (swipeRight) {
         setSwiping(true);
         await animate(x, FLY_DISTANCE, {
           type: "tween",
@@ -312,7 +320,7 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
         advanceCard("right");
         x.jump(0);
         setSwiping(false);
-      } else if (info.offset.x < -SWIPE_THRESHOLD) {
+      } else if (swipeLeft) {
         setSwiping(true);
         await animate(x, -FLY_DISTANCE, {
           type: "tween",
@@ -412,8 +420,9 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
                 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 drag={isTop && !swiping ? "x" : false}
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={1}
+                dragSnapToOrigin
+                dragElastic={0.7}
+                dragMomentum={false}
                 onDragEnd={isTop ? handleDragEnd : undefined}
               >
                 {isTop && (
