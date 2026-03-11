@@ -18,7 +18,7 @@ export default function StartupCard({ startup }: StartupCardProps) {
   return (
     <div ref={cardRef} className="relative flex h-full w-full flex-col justify-between overflow-hidden rounded-2xl bg-white p-6 shadow-[0_4px_6px_rgba(0,0,0,0.07),0_20px_40px_rgba(0,0,0,0.1)]">
       <ShareButton cardRef={cardRef} startup={startup} />
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto" style={{ touchAction: "pan-y" }}>
         <div className="mb-1 flex items-center gap-3 pr-10">
           {startup.logo ? (
             <img

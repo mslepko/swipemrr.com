@@ -17,6 +17,8 @@ body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
+  overscroll-behavior-x: none;
+  -ms-touch-action: pan-y;
 }
 
 body {
