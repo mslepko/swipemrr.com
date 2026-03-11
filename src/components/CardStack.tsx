@@ -67,6 +67,7 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
   const [swiping, setSwiping] = useState(false);
   const [swipeHistory, setSwipeHistory] = useState<SwipeHistoryEntry[]>([]);
   const initialLoadDone = useRef(false);
+  const constraintsRef = useRef<HTMLDivElement>(null);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-12, 0, 12]);
@@ -397,7 +398,7 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="relative min-h-0 flex-1 w-full">
+      <div ref={constraintsRef} className="relative min-h-0 flex-1 w-full">
         {remaining
           .slice(0, 3)
           .reverse()
@@ -407,7 +408,7 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
             return (
               <motion.div
                 key={startup.slug}
-                className="absolute inset-0"
+                className="absolute inset-0 select-none"
                 style={{
                   zIndex: 3 - i,
                   ...(isTop
@@ -420,6 +421,7 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
                 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 drag={isTop && !swiping ? "x" : false}
+                dragConstraints={constraintsRef}
                 dragSnapToOrigin
                 dragElastic={0.7}
                 dragMomentum={false}
