@@ -127,7 +127,15 @@ export default function CardStack({ filters, onFetchedAt }: CardStackProps) {
       try {
         let res: Response | null = null;
         for (let attempt = 0; attempt < 3; attempt++) {
-          res = await fetch("/api/startups/all");
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 15000);
+          try {
+            res = await fetch("/api/startups/all", {
+              signal: controller.signal,
+            });
+          } finally {
+            clearTimeout(timeout);
+          }
           if (res.status !== 429) break;
           if (attempt < 2) {
             await new Promise((r) => setTimeout(r, 2000 * Math.pow(2, attempt)));
