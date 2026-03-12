@@ -7,7 +7,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  revalidateTag("all-startups", "max-age=1");
+  // Invalidate the stale cache entry; a second cron at 06:01 hits
+  // /api/startups/all to warm it externally
+  revalidateTag("all-startups", { expire: 0 });
 
   return NextResponse.json({ revalidated: true, now: Date.now() });
 }

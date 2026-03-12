@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/refresh",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/startups/all",
+      "schedule": "1 6 * * *"
     }
   ]
 }
