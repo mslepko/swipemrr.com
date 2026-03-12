@@ -93,10 +93,9 @@ export async function fetchAllStartups(): Promise<TrustMRRStartup[]> {
   let hasMore = true;
 
   while (hasMore) {
-    if (page > 1) await sleep(500);
     const data = await fetchStartups({
       onSale: "true",
-      limit: "50",
+      limit: "200",
       page: String(page),
     });
     all.push(...data.data);
