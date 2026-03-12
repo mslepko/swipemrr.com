@@ -12,15 +12,20 @@ export async function GET(request: NextRequest) {
   // Invalidate the stale cache entry
   revalidateTag("all-startups", { expire: 0 });
 
-  // Warm the cache by hitting the endpoint so the next real user gets a fast response
-  const origin = request.nextUrl.origin;
-  const res = await fetch(`${origin}/api/startups/all`);
-  const json = await res.json();
+  // Best-effort cache warm — never fail the cron even if the endpoint is down
+  let warmed = false;
+  let total = 0;
+  try {
+    const origin = request.nextUrl.origin;
+    const res = await fetch(`${origin}/api/startups/all`);
+    if (res.ok) {
+      const json = await res.json();
+      warmed = true;
+      total = json.meta?.total ?? 0;
+    }
+  } catch {
+    // Swallow — warming is best-effort
+  }
 
-  return NextResponse.json({
-    revalidated: true,
-    warmed: res.ok,
-    total: json.meta?.total ?? 0,
-    now: Date.now(),
-  });
+  return NextResponse.json({ revalidated: true, warmed, total, now: Date.now() });
 }
