@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Invalidate the stale cache entry
-  revalidateTag("all-startups");
+  revalidateTag("all-startups", { expire: 0 });
 
   // Warm the cache by hitting the endpoint so the next real user gets a fast response
   const origin = request.nextUrl.origin;
