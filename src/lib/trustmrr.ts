@@ -1,6 +1,22 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { RawTrustMRRStartup, TrustMRRStartup, ApiResponse } from "./types";
 
-const BASE_URL = "https://trustmrr.com/api/v1";
+const BASE_URL = process.env.TRUSTMRR_BASE_URL ?? "https://trustmrr.com/api/v1";
+
+// User-facing composition must not sit in multi-second retry sleeps when the
+// upstream rate limit is exhausted — it fails fast (throws RateLimitError on
+// the first 429) and serves whatever is already cached. The warm chain keeps
+// the default patient behavior. Scoped via AsyncLocalStorage so concurrent
+// requests in the same process don't affect each other.
+const fetchPolicy = new AsyncLocalStorage<{ retry429: boolean }>();
+
+export function withNo429Retries<T>(fn: () => Promise<T>): Promise<T> {
+  return fetchPolicy.run({ retry429: false }, fn);
+}
+
+// TrustMRR clamps every request to 10 items per page (documented max) and
+// rate-limits to 20 requests/minute per API key.
+export const PAGE_LIMIT = 10;
 
 function normalizeStartup(raw: RawTrustMRRStartup): TrustMRRStartup {
   return {
@@ -31,11 +47,50 @@ interface RawApiResponse {
   };
 }
 
-function sleep(ms: number): Promise<void> {
+export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 4;
+const MAX_SLEEP_MS = 65_000;
+
+// The reset header may be epoch seconds, epoch milliseconds, or a
+// seconds-until-reset delta depending on the middleware. Normalize all
+// three to "milliseconds from now".
+function parseResetMs(header: string | null): number | null {
+  if (!header) return null;
+  const n = Number(header);
+  if (!Number.isFinite(n) || n < 0) return null;
+  if (n > 1e12) return Math.max(0, n - Date.now()); // epoch ms
+  if (n > 1e9) return Math.max(0, n * 1000 - Date.now()); // epoch seconds
+  return n * 1000; // delta seconds
+}
+
+// Rate-limit state observed on the most recent upstream response. The warm
+// chain reads this between page fetches to pace itself instead of blundering
+// into 429s. `fetches` lets callers tell a real upstream hit from a cache hit.
+interface UpstreamStats {
+  fetches: number;
+  remaining: number | null;
+  resetAtMs: number | null;
+}
+
+const stats: UpstreamStats = { fetches: 0, remaining: null, resetAtMs: null };
+
+export function getUpstreamStats(): UpstreamStats {
+  return { ...stats };
+}
+
+function recordRateHeaders(res: Response) {
+  stats.fetches++;
+  const remaining = res.headers.get("X-RateLimit-Remaining");
+  stats.remaining =
+    remaining !== null && remaining !== "" && Number.isFinite(Number(remaining))
+      ? Number(remaining)
+      : null;
+  const resetMs = parseResetMs(res.headers.get("X-RateLimit-Reset"));
+  stats.resetAtMs = resetMs !== null ? Date.now() + resetMs : null;
+}
 
 export async function fetchStartups(
   params: Record<string, string>
@@ -56,17 +111,18 @@ export async function fetchStartups(
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
+      cache: "no-store",
     });
+    recordRateHeaders(res);
 
     if (res.status === 429) {
-      const resetHeader = res.headers.get("X-RateLimit-Reset");
-      const retryAfter = resetHeader
-        ? Math.max(0, Number(resetHeader) * 1000 - Date.now())
-        : 2000 * Math.pow(2, attempt);
+      const retryAfter =
+        parseResetMs(res.headers.get("X-RateLimit-Reset")) ??
+        2000 * Math.pow(2, attempt);
 
-      if (attempt < MAX_RETRIES) {
-        const delay = Math.min(retryAfter, 30000);
-        await sleep(delay);
+      const retry429 = fetchPolicy.getStore()?.retry429 ?? true;
+      if (retry429 && attempt < MAX_RETRIES) {
+        await sleep(Math.min(retryAfter + 250, MAX_SLEEP_MS));
         continue;
       }
       throw new RateLimitError(retryAfter);
@@ -87,23 +143,25 @@ export async function fetchStartups(
   throw new Error("Unexpected: exhausted retries");
 }
 
-export async function fetchAllStartups(): Promise<TrustMRRStartup[]> {
-  const all: TrustMRRStartup[] = [];
-  let page = 1;
-  let hasMore = true;
+export interface StartupPage {
+  items: TrustMRRStartup[];
+  total: number;
+  page: number;
+  hasMore: boolean;
+}
 
-  while (hasMore) {
-    const data = await fetchStartups({
-      onSale: "true",
-      limit: "200",
-      page: String(page),
-    });
-    all.push(...data.data);
-    hasMore = data.meta.hasMore;
-    page++;
-  }
-
-  return all;
+export async function fetchStartupsPage(page: number): Promise<StartupPage> {
+  const res = await fetchStartups({
+    onSale: "true",
+    limit: String(PAGE_LIMIT),
+    page: String(page),
+  });
+  return {
+    items: res.data,
+    total: res.meta.total,
+    page,
+    hasMore: res.meta.hasMore,
+  };
 }
 
 export class RateLimitError extends Error {

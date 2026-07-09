@@ -1,12 +1,12 @@
 {
   "crons": [
     {
-      "path": "/api/cron/refresh",
+      "path": "/api/cron/expire",
       "schedule": "0 6 * * *"
     },
     {
-      "path": "/api/startups/all",
-      "schedule": "1 6 * * *"
+      "path": "/api/cron/refresh",
+      "schedule": "30 7 * * *"
     }
   ]
 }
